@@ -1,0 +1,30 @@
+---
+name: test (workflow_call)
+on: workflow_call
+jobs:
+  renovate-config-validator:
+    uses: suzuki-shunsuke/github-action-renovate-config-validator/.github/workflows/renovate-config-validator.yaml@1e1604219a6b38ae9a10aff42a28a3656322c31a # v2.4.1
+    permissions:
+      contents: read
+
+  test:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    permissions: {}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: aquaproj/aqua-installer@96a9bc20066c5bf5e275b41019cfc165b25f4e2e # v4.0.5
+        with:
+          aqua_version: v2.63.0
+
+      - run: terraform version
+        env:
+          AQUA_GITHUB_TOKEN: ${{github.token}}
+
+      - run: terraform init
+        working-directory: test
+
+      - run: terraform validate
+        working-directory: test
