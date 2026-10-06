@@ -1,0 +1,23 @@
+---
+name: test
+on: pull_request
+permissions: {}
+concurrency:
+  group: ${{ github.workflow }}--${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  # Don't add jobs to this file. Please add jobs to wc_test.yaml.
+  test:
+    uses: ./.github/workflows/wc_test.yaml
+    permissions:
+      contents: read
+  status-check:
+    runs-on: ubuntu-26.04
+    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+    timeout-minutes: 10
+    permissions: {}
+    needs:
+      - test
+    steps:
+      - run: exit 1
+  # Don't add jobs to this file. Please add jobs to wc_test.yaml.
