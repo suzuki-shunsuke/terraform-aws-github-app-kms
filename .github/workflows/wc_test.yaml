@@ -2,10 +2,14 @@
 name: test (workflow_call)
 on: workflow_call
 jobs:
-  renovate-config-validator:
-    uses: suzuki-shunsuke/github-action-renovate-config-validator/.github/workflows/renovate-config-validator.yaml@1e1604219a6b38ae9a10aff42a28a3656322c31a # v2.4.1
+  # renovate-config-validator, ghalint, and typos
+  test-workflow:
+    uses: suzuki-shunsuke/test-workflow/.github/workflows/test.yaml@0b89b9b4314282810bc944364380568708208eaa # v0.0.2
+    with:
+      aqua_version: v2.66.0
     permissions:
       contents: read
+      pull-requests: read
 
   test:
     runs-on: ubuntu-26.04
