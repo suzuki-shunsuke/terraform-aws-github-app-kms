@@ -21,6 +21,25 @@ module "foo" {
 }
 ```
 
+## Key policy
+
+The module sets the key policy of the KMS key.
+In addition to the default key policy, which delegates access to the key to IAM policies in the account, it denies `kms:Sign` to any principal other than the IAM Role created by this module and `signer_arns`.
+Without the deny, any IAM principal in the account could sign with the key, and issue GitHub App installation access tokens at any time, only by being granted `kms:Sign` by an IAM policy.
+
+If another IAM Role signs with the key, pass its ARN to `signer_arns` and attach `policy_arn` to it.
+If `create_role` is false, `signer_arns` must not be empty.
+
+```tf
+module "foo" {
+  source      = "github.com/suzuki-shunsuke/terraform-aws-github-app-kms"
+  app_slug    = "suzuki-shunsuke-app"
+  imported    = true
+  create_role = false
+  signer_arns = ["arn:aws:iam::123456789012:role/foo"]
+}
+```
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
