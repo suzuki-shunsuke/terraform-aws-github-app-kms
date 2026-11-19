@@ -24,6 +24,18 @@ variable "conditions" {
   default     = []
 }
 
+variable "signer_arns" {
+  type        = list(string)
+  description = <<-EOT
+  IAM principal ARNs allowed to sign with the KMS key in addition to the IAM Role created by this module.
+  The key policy denies kms:Sign to any other principal.
+  Specify IAM Role ARNs, not assumed role session ARNs.
+  If create_role is false, this must not be empty.
+  Principals in the same account also need kms:Sign by an IAM policy (e.g. attach policy_arn).
+  EOT
+  default     = []
+}
+
 ##
 
 variable "key_description" {

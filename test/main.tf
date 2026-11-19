@@ -28,4 +28,5 @@ module "without_role" {
   app_slug    = "example-app-2"
   imported    = true
   create_role = false
+  signer_arns = ["arn:aws:iam::123456789012:role/example"]
 }

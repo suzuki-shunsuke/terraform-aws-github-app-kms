@@ -21,12 +21,31 @@ module "foo" {
 }
 ```
 
+## Key policy
+
+The module sets the key policy of the KMS key.
+In addition to the default key policy, which delegates access to the key to IAM policies in the account, it denies `kms:Sign` to any principal other than the IAM Role created by this module and `signer_arns`.
+Without the deny, any IAM principal in the account could sign with the key, and issue GitHub App installation access tokens at any time, only by being granted `kms:Sign` by an IAM policy.
+
+If another IAM Role signs with the key, pass its ARN to `signer_arns` and attach `policy_arn` to it.
+If `create_role` is false, `signer_arns` must not be empty.
+
+```tf
+module "foo" {
+  source      = "github.com/suzuki-shunsuke/terraform-aws-github-app-kms"
+  app_slug    = "suzuki-shunsuke-app"
+  imported    = true
+  create_role = false
+  signer_arns = ["arn:aws:iam::123456789012:role/foo"]
+}
+```
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
 | Name | Version |
 | ---- | ------- |
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 0.15.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.2.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 3.63 |
 
 ## Providers
@@ -48,9 +67,12 @@ No modules.
 | [aws_iam_role_policy_attachment.sign](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_kms_alias.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kms_alias) | resource |
 | [aws_kms_external_key.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kms_external_key) | resource |
+| [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_iam_openid_connect_provider.github_actions](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_openid_connect_provider) | data source |
+| [aws_iam_policy_document.key](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.sign](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_iam_policy_document.sign_assume_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_partition.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/partition) | data source |
 
 ## Inputs
 
@@ -65,6 +87,7 @@ No modules.
 | <a name="input_policy_name"></a> [policy\_name](#input\_policy\_name) | The IAM Policy name. Defaults to "sign-<app\_slug>" | `string` | `null` | no |
 | <a name="input_role_description"></a> [role\_description](#input\_role\_description) | The IAM Role description. Defaults to "Sign <app\_slug> GitHub App JWTs with AWS KMS" | `string` | `null` | no |
 | <a name="input_role_name"></a> [role\_name](#input\_role\_name) | The IAM Role name. Defaults to "sign-<app\_slug>" | `string` | `null` | no |
+| <a name="input_signer_arns"></a> [signer\_arns](#input\_signer\_arns) | IAM principal ARNs allowed to sign with the KMS key in addition to the IAM Role created by this module.<br/>The key policy denies kms:Sign to any other principal.<br/>Specify IAM Role ARNs, not assumed role session ARNs.<br/>If create\_role is false, this must not be empty.<br/>Principals in the same account also need kms:Sign by an IAM policy (e.g. attach policy\_arn). | `list(string)` | `[]` | no |
 
 ## Outputs
 

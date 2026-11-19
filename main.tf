@@ -4,6 +4,8 @@ locals {
   role_name        = coalesce(var.role_name, "sign-${var.app_slug}")
   role_description = coalesce(var.role_description, "Sign ${var.app_slug} GitHub App JWTs with AWS KMS")
   policy_name      = coalesce(var.policy_name, "sign-${var.app_slug}")
+  # Principals allowed to sign with the key. The key policy denies kms:Sign to everyone else.
+  signer_arns = concat(aws_iam_role.main[*].arn, var.signer_arns)
 }
 
 resource "aws_kms_external_key" "main" {
@@ -12,6 +14,55 @@ resource "aws_kms_external_key" "main" {
   key_usage    = "SIGN_VERIFY"
   multi_region = false
   enabled      = var.imported
+  policy       = data.aws_iam_policy_document.key.json
+
+  lifecycle {
+    precondition {
+      condition     = length(local.signer_arns) > 0
+      error_message = "signer_arns must not be empty when create_role is false."
+    }
+  }
+}
+
+data "aws_caller_identity" "current" {}
+
+data "aws_partition" "current" {}
+
+data "aws_iam_policy_document" "key" {
+  # The default key policy. It delegates access to the key to IAM policies in the account.
+  # Removing it would make the key unmanageable.
+  statement {
+    sid       = "Enable IAM User Permissions"
+    effect    = "Allow"
+    actions   = ["kms:*"]
+    resources = ["*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+  }
+
+  # Because of the statement above, any IAM principal in the account could sign with the key
+  # (and issue GitHub App installation access tokens at any time) only by being granted kms:Sign by an IAM policy.
+  # Restrict signing to the given principals.
+  statement {
+    sid       = "DenySignExceptAllowedPrincipals"
+    effect    = "Deny"
+    actions   = ["kms:Sign"]
+    resources = ["*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "ArnNotEquals"
+      variable = "aws:PrincipalArn"
+      values   = local.signer_arns
+    }
+  }
 }
 
 resource "aws_kms_alias" "main" {
